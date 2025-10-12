@@ -33,7 +33,7 @@ class Tibetan_Phrase_Parser {
     }
 
     public function handle_parse_request($request) {
-        $phrase = trim($request->get_param('q'));
+        $phrase = trim(sanitize_text_field($request->get_param('q')));
         if (empty($phrase)) {
             return new WP_Error('empty_phrase', 'Phrase is empty', ['status' => 400]);
         }
