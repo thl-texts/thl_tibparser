@@ -25,6 +25,7 @@ class Tibetan_Phrase_Parser {
     }
 
     public function register_routes() {
+        // Path is eg: /wp-json/tibetan/v1/parse?q=chos%20sku%20ngo%20bo%20nyid
         register_rest_route('tibetan/v1', '/parse', [
             'methods' => ['GET', 'POST'],
             'callback' => [$this, 'handle_parse_request'],
@@ -34,6 +35,7 @@ class Tibetan_Phrase_Parser {
 
     public function handle_parse_request($request) {
         $phrase = trim(sanitize_text_field($request->get_param('q')));
+        $this->dbug[] = $phrase;
         if (empty($phrase)) {
             return new WP_Error('empty_phrase', 'Phrase is empty', ['status' => 400]);
         }
@@ -44,12 +46,14 @@ class Tibetan_Phrase_Parser {
         $script_type = $is_tibetan ? 'tibetan' : 'wylie';
 
         // Trim of tseks,puncutaion or numeral or spaces from the beginning
-        if(preg_match('/[\x{0F00}-\x{0F3F}\s_\/]+(.*)$/u', $phrase, $matches)) {
+        if(preg_match('/[\x{0F00}-\x{0F3F}\s_\/]*(.*)$/u', $phrase, $matches)) {
+            $this->dbug[] = $matches;
             $phrase = $matches[1];
         }
 
         // Choose splitting based on type
         $subphrases = $this->split_phrase($phrase, $script_type);
+        $this->dbug[] = $subphrases;
         $parsed = [];
         foreach ($subphrases as $sub) {
             $this->dbug[] = "Doing: $sub";
@@ -60,7 +64,7 @@ class Tibetan_Phrase_Parser {
             'original_phrase' => $phrase,
             'script_type' => $script_type,
             'parsed' => $parsed,
-            //'debug' => $this->dbug,
+            'debug' => $this->dbug,
         ];
     }
 
