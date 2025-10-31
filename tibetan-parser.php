@@ -34,7 +34,10 @@ class Tibetan_Phrase_Parser {
     }
 
     public function handle_parse_request($request) {
-        $phrase = trim(sanitize_text_field($request->get_param('q')));
+        $phrase = trim(sanitize_text_field($request->get_param('text')));
+        $dicts = trim(sanitize_text_field($request->get_param('dicts')));
+        $show_debug = in_array($request->get_param('debug'), ['1','true', 'on', 'yes', 'debug']);
+
         $this->dbug[] = $phrase;
         if (empty($phrase)) {
             return new WP_Error('empty_phrase', 'Phrase is empty', ['status' => 400]);
@@ -47,25 +50,28 @@ class Tibetan_Phrase_Parser {
 
         // Trim of tseks,puncutaion or numeral or spaces from the beginning
         if(preg_match('/[\x{0F00}-\x{0F3F}\s_\/]*(.*)$/u', $phrase, $matches)) {
-            $this->dbug[] = $matches;
+            //$this->dbug[] = $matches;
             $phrase = $matches[1];
         }
 
         // Choose splitting based on type
         $subphrases = $this->split_phrase($phrase, $script_type);
-        $this->dbug[] = $subphrases;
+        //$this->dbug[] = $subphrases;
         $parsed = [];
         foreach ($subphrases as $sub) {
             $this->dbug[] = "Doing: $sub";
-            $parsed = array_merge($parsed, $this->parse_subphrase($sub, $script_type));
+            $parsed = array_merge($parsed, $this->parse_subphrase($sub, $script_type, $parsed));
         }
 
-        return [
+        $returnvar =  [
             'original_phrase' => $phrase,
             'script_type' => $script_type,
             'parsed' => $parsed,
-            'debug' => $this->dbug,
         ];
+        if ($show_debug) {
+            $returnvar['debug'] = $this->dbug;
+        }
+        return $returnvar;
     }
 
     private function is_tibetan_unicode($string) {
@@ -82,14 +88,23 @@ class Tibetan_Phrase_Parser {
         }
     }
 
-    private function parse_subphrase($subphrase, $type) {
+    private function parse_subphrase($subphrase, $type, &$alreadyparsed) {
         $results = [];
         $c = 0;
         $subphrase = mb_ereg_replace('་+$', '', $subphrase); // remove trailing tsek
         $original_phrase = $subphrase;
+
         while (!empty($subphrase)) {
             $c++;
-            if ($c > 50) { break; }
+            if ($c > 1000) { break; }
+            //$this->dbug[] = "subphrase: $subphrase";
+            //$this->dbug[] = $results;
+            $this->dbug[] ="Already parsed:";
+            $this->dbug[] = $alreadyparsed;
+            if ($this->alreadyFound($subphrase, $results, $alreadyparsed)) {
+                $subphrase = $this->calculateNewSubphrase($original_phrase, $subphrase);
+                continue;
+            }
             $match = $this->query_solr($subphrase, $type);
             if ($match) {
                 $results[] = $match;
@@ -100,7 +115,7 @@ class Tibetan_Phrase_Parser {
                 $subphrase = $this->calculateNewSubphrase($original_phrase, $matched_word);
                 $original_phrase = $subphrase;
             } else {
-                $this->dbug[] = "no match. Subphrase: $subphrase, Original phrase: $original_phrase";
+                //$this->dbug[] = "no match. Subphrase: $subphrase, Original phrase: $original_phrase";
                 $last_delim = ($type === 'tibetan')
                     ? mb_strrpos($subphrase, '་')
                     : mb_strrpos($subphrase, ' ');
@@ -136,6 +151,20 @@ class Tibetan_Phrase_Parser {
         }
         // otherwise phrase is fine
         return $subphrase;
+    }
+
+    private function alreadyFound($subphrase, &$results, &$alreadyparsed) {
+        foreach ($alreadyparsed as $ite) {
+            if ($subphrase === $ite['tibetan']) {
+                return true;
+            }
+        }
+        foreach ($results as $result) {
+            if ($result['tibetan'] === $subphrase) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function query_solr($string, $type) {
@@ -187,7 +216,7 @@ class Tibetan_Phrase_Parser {
             }
         }
         // error_log("Debug type: " . gettype($this->dbug));
-       $this->dbug[] = "Query: $query";
+       //$this->dbug[] = "Query: $query";
         return urlencode($query);
     }
 
