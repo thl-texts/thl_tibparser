@@ -171,30 +171,46 @@ class Tibetan_Phrase_Parser {
         $query = $this->buildQuery($string, $type);
         $url = $this->solr_url . "?q=$query&fl=uid,id,header,name_tibt,name_latin&wt=json&rows=1";
         $this->dbug[] = "URL: $url";
-        $response = wp_remote_get($url, [
-            'timeout' => 10,
-            'headers' => [
-                    'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-                    'Accept'          => 'application/json, text/javascript, */*; q=0.01',
-                    'Accept-Language' => 'en-US,en;q=0.9',
-                    'Accept-Encoding' => 'gzip, deflate, br',
-                    'Connection'      => 'keep-alive',
-                    'Referer'         => 'https://staging.thlib.org',
-                    'DNT'             => '1',
-                    'Sec-Fetch-Site'  => 'same-origin',
-                    'Sec-Fetch-Mode'  => 'cors',
-                    'Sec-Fetch-Dest'  => 'empty',
-            ]
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                'Accept: application/json',
+                'Referer: https://staging.thlib.org',
         ]);
-        if (is_wp_error($response)) {
-            $error_message = $response->get_error_message();
-            $this->dbug[] = "HTTP ERROR: " . $error_message;
-            return false;
-        }
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        $this->dbug[] = "Response: $response";
+//
+//        $response = wp_remote_get($url, [
+//            'timeout' => 10,
+//            'headers' => [
+//                    'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+//                    'Accept'          => 'application/json, text/javascript, */*; q=0.01',
+//                    'Accept-Language' => 'en-US,en;q=0.9',
+//                    'Accept-Encoding' => 'gzip, deflate, br',
+//                    'Connection'      => 'keep-alive',
+//                    'Referer'         => 'https://staging.thlib.org',
+//                    'DNT'             => '1',
+//                    'Sec-Fetch-Site'  => 'same-origin',
+//                    'Sec-Fetch-Mode'  => 'cors',
+//                    'Sec-Fetch-Dest'  => 'empty',
+//            ]
+//        ]);
+//        if (is_wp_error($response)) {
+//            $error_message = $response->get_error_message();
+//            $this->dbug[] = "HTTP ERROR: " . $error_message;
+//            return false;
+//        }
+//
+//        $body = wp_remote_retrieve_body($response);
+//        $this->dbug[] = "Response: " . $body;
+//        $data = json_decode($body, true);
 
-        $body = wp_remote_retrieve_body($response);
-        $this->dbug[] = "Response: " . $body;
-        $data = json_decode($body, true);
+
+        $data = json_decode($response, true);
 
         if (!empty($data['response']['docs'])) {
             $doc = $data['response']['docs'][0];
