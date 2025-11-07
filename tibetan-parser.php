@@ -96,11 +96,11 @@ class Tibetan_Phrase_Parser {
 
         while (!empty($subphrase)) {
             $c++;
-            if ($c > 1000) { break; }
-            //$this->dbug[] = "subphrase: $subphrase";
-            //$this->dbug[] = $results;
-            $this->dbug[] ="Already parsed:";
-            $this->dbug[] = $alreadyparsed;
+            if ($c > 100) { break; }
+            $this->dbug[] = "subphrase: $subphrase";
+            $this->dbug[] = $results;
+            //$this->dbug[] ="Already parsed:";
+            //$this->dbug[] = $alreadyparsed;
             if ($this->alreadyFound($subphrase, $results, $alreadyparsed)) {
                 $subphrase = $this->calculateNewSubphrase($original_phrase, $subphrase);
                 continue;
