@@ -174,14 +174,9 @@ class Tibetan_Phrase_Parser {
         $response = wp_remote_get($url, [
             'timeout' => 10,
             'headers' => [
-                // Browser-like User-Agent
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-                // Optional Referer header
-                    'Referer' => 'https://staging.thlib.org',
-                // Accept header
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                // Optional: Accept-Language
-                    'Accept-Language' => 'en-US,en;q=0.9',
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                'Referer' => 'https://staging.thlib.org',
+                'Accept' => 'application/json',
             ]
         ]);
         if (is_wp_error($response)) {
