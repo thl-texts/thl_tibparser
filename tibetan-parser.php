@@ -170,7 +170,7 @@ class Tibetan_Phrase_Parser {
     private function query_solr($string, $type) {
         $query = $this->buildQuery($string, $type);
         $url = $this->solr_url . "?q=$query&fl=uid,id,header,name_tibt,name_latin&wt=json&rows=1";
-        // $this->dbug[] = "URL: $url";
+        $this->dbug[] = "URL: $url";
         $response = wp_remote_get($url, ['timeout' => 10]);
         if (is_wp_error($response)) return false;
 
