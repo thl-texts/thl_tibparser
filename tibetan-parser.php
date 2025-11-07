@@ -172,9 +172,14 @@ class Tibetan_Phrase_Parser {
         $url = $this->solr_url . "?q=$query&fl=uid,id,header,name_tibt,name_latin&wt=json&rows=1";
         $this->dbug[] = "URL: $url";
         $response = wp_remote_get($url, ['timeout' => 10]);
-        if (is_wp_error($response)) return false;
+        if (is_wp_error($response)) {
+            $error_message = $response->get_error_message();
+            $this->dbug[] = "HTTP ERROR: " . $error_message;
+            return false;
+        }
 
         $body = wp_remote_retrieve_body($response);
+        $this->dbug[] = "Response: " . $body;
         $data = json_decode($body, true);
 
         if (!empty($data['response']['docs'])) {
