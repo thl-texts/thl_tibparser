@@ -171,6 +171,63 @@ class Tibetan_Phrase_Parser {
         $query = $this->buildQuery($string, $type);
         $url = $this->solr_url . "?q=$query&fl=uid,id,header,name_tibt,name_latin&wt=json&rows=1";
         $this->dbug[] = "URL: $url";
+
+        // Initialize cURL
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+        // Browser-like headers
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                'Accept: application/json, text/javascript, */*; q=0.01',
+                'Accept-Language: en-US,en;q=0.9',
+                'Accept-Encoding: gzip, deflate, br',
+                'Connection: keep-alive',
+                'Referer: https://staging.thlib.org',
+                'DNT: 1',
+                'Sec-Fetch-Site: same-origin',
+                'Sec-Fetch-Mode: cors',
+                'Sec-Fetch-Dest: empty',
+        ]);
+
+        // Optional: Enable SSL verification if needed
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+        // Execute request
+        $body = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            $this->dbug[] = "cURL error: " . curl_error($ch);
+            curl_close($ch);
+            return false;
+        }
+
+        curl_close($ch);
+
+        $this->dbug[] = "HTTP status code: $http_code";
+
+        if ($http_code === 403) {
+            $this->dbug[] = "403 Forbidden — server blocked the request";
+            $this->dbug[] = "Response body (first 1000 chars): " . substr($body, 0, 1000);
+            return false;
+        } elseif ($http_code >= 400) {
+            $this->dbug[] = "HTTP error $http_code";
+            return false;
+        }
+
+        $this->dbug[] = "Response body length: " . strlen($body);
+
+        return $body;
+    }
+
+    private function query_solr2($string, $type) {
+        $query = $this->buildQuery($string, $type);
+        $url = $this->solr_url . "?q=$query&fl=uid,id,header,name_tibt,name_latin&wt=json&rows=1";
+        $this->dbug[] = "URL: $url";
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
