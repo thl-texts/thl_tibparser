@@ -182,7 +182,7 @@ class Tibetan_Phrase_Parser {
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        $this->dbug[] = "Response: $response";
+        $this->dbug[] = "CURL Response: $response";
 //
 //        $response = wp_remote_get($url, [
 //            'timeout' => 10,
