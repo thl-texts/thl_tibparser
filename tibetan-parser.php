@@ -172,11 +172,17 @@ class Tibetan_Phrase_Parser {
         $url = $this->solr_url . "?q=$query&fl=uid,id,header,name_tibt,name_latin&wt=json&rows=1";
         $this->dbug[] = "URL: $url";
         $response = wp_remote_get($url, [
+            'timeout' => 10,
             'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-                'Referer' => 'https://staging.thlib.org/'
-            ],
-            'timeout' => 10
+                // Browser-like User-Agent
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                // Optional Referer header
+                    'Referer' => 'https://staging.thlib.org',
+                // Accept header
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                // Optional: Accept-Language
+                    'Accept-Language' => 'en-US,en;q=0.9',
+            ]
         ]);
         if (is_wp_error($response)) {
             $error_message = $response->get_error_message();
